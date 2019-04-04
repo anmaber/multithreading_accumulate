@@ -4,8 +4,8 @@
 
 int main()
 {
-    std::vector<int> v;
-    v.shrink_to_fit();
-    std::cout << accumulate(v.begin(),v.end(), 40);
+    std::vector<int> v2(1000,2);
+    std::cout<< parallelAccumulate(v2.begin(),v2.end(),900);
+
     return 0;
 }

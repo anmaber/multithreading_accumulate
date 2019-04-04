@@ -1,11 +1,44 @@
 #pragma once
 #include <iterator>
+#include <thread>
+#include <vector>
+#include <numeric>
+#include <iostream>
+#include <mutex>
 
+std::mutex m;
 
 template <typename Iterator, typename Type>
-Type accumulate(Iterator begin, Iterator end, Type initialValue)
+Type parallelAccumulate(Iterator begin, Iterator end, Type initialValue)
 {
-    if(std::distance(end,begin) == 0) return initialValue;
+    auto size = std::distance(begin,end);
+    if(!size) return initialValue;
 
+    auto hardwareThreads = std::thread::hardware_concurrency() != 0 ? std::thread::hardware_concurrency() : 2;
+    std::vector<Type> partialSum;
+    int blockSize = size % hardwareThreads;
+    std::vector<std::thread> threads;
+    Iterator blockEnd = begin;
+
+    for(int i = 0; i < hardwareThreads-1; ++i)
+    {
+        threads.emplace_back(std::thread([&](){
+            m.lock();
+            blockEnd += blockSize;
+            partialSum.push_back(std::accumulate(begin,blockEnd,0));
+            begin += blockSize;
+            m.unlock();
+        }));
+
+    }
+    threads.emplace_back(std::thread([&](){
+        partialSum.push_back(std::accumulate(begin,end,0));
+    }));
+
+    for(auto && t : threads)
+    {
+        t.join();
+    }
+
+    return std::accumulate(partialSum.begin(),partialSum.end(), initialValue);
 }
-
