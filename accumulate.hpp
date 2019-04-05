@@ -23,17 +23,18 @@ Type parallelAccumulate(Iterator begin, Iterator end, Type initialValue)
 
     for(int i = 0; i < hardwareThreads-1; ++i)
     {
-        threads.emplace_back(std::thread([&](){
+        blockEnd += blockSize;
+        threads.emplace_back(std::thread([&partialSum,begin,blockEnd](){
             m.lock();
-            blockEnd += blockSize;
             partialSum.push_back(std::accumulate(begin,blockEnd,0));
-            begin += blockSize;
             m.unlock();
         }));
-
+        begin += blockSize;
     }
-    threads.emplace_back(std::thread([&](){
+    threads.emplace_back(std::thread([&partialSum, begin, end](){
+        m.lock();
         partialSum.push_back(std::accumulate(begin,end,0));
+        m.unlock();
     }));
 
     for(auto && t : threads)
