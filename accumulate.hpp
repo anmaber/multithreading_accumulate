@@ -5,6 +5,7 @@
 #include <numeric>
 #include <iostream>
 #include <mutex>
+#include <cmath>
 
 std::mutex m;
 
@@ -16,7 +17,7 @@ Type parallelAccumulate(Iterator begin, Iterator end, Type initialValue)
 
     auto hardwareThreads = std::thread::hardware_concurrency() != 0 ? std::thread::hardware_concurrency() : 2;
     std::vector<Type> partialSum;
-    int blockSize = size % hardwareThreads;
+    int blockSize = floor(static_cast<double>(size) / static_cast<double>(hardwareThreads));
     std::vector<std::thread> threads;
     Iterator blockEnd = begin;
 
